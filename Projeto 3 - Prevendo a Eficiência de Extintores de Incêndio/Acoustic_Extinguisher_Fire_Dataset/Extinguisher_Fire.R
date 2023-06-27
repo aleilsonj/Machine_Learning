@@ -19,6 +19,10 @@ getwd()
 library(readxl)
 library(ggplot2)
 library(reshape2)
+library(dplyr)
+library(randomForest)
+library(lattice)
+library(caret)
 
 # Carregando dataset
 df <- read_xlsx("Acoustic_Extinguisher_Fire_Dataset.xlsx")
@@ -263,4 +267,53 @@ ggplot(matriz_melt, aes(Var2, Var1, fill = value)) +
         legend.title = element_blank(),
         legend.text = element_text(size = 10),
         legend.position = "right")
+
+## Pré-Processamento
+
+# Label Encoding
+# Criando a codificação categórica
+unique(df$FUEL)
+# Transformando a coluna em números
+df$FUEL <- recode(df$FUEL,
+                  "gasoline" = 1,
+                  "kerosene" = 2,
+                  "thinner" = 3,
+                  "lpg" = 4)
+
+# Padronização da variáveis numéricas
+df[, num] <- scale(df[, num])
+
+# variáveis importantes de acordo com o RF
+modelo <- randomForest(STATUS ~ . ,
+                       data = df,
+                       ntree = 100, nodesize = 10,
+                       importance = TRUE)
+
+varImpPlot(modelo) 
+
+# dividindo dados em treino e teste
+set.seed(10)
+
+indice_treinamento <- createDataPartition(df$FUEL, p = 0.7, list = FALSE)
+dados_treinamento <- df[indice_treinamento,]
+dados_teste <- df[-indice_treinamento,]
+
+# Treinar o modelo de regressão logística
+modelo <- train(STATUS ~ ., 
+                data = dados_treinamento,
+                method = "glm", 
+                family = "binomial")
+
+# Fazer previsões nos dados de teste
+previsoes <- predict(modelo, newdata = dados_teste)
+
+# Calcular a acurácia
+acuracia <- confusionMatrix(previsoes, dados_teste$STATUS)$overall['Accuracy']
+
+# Obter a matriz de confusão
+matriz_confusao <- confusionMatrix(previsoes, dados_teste$STATUS)
+
+
+
+
 
