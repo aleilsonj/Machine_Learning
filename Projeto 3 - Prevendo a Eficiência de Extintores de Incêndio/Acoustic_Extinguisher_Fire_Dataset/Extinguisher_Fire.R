@@ -20,6 +20,7 @@ library(readxl)
 library(ggplot2)
 library(reshape2)
 library(dplyr)
+library(e1071)
 library(randomForest)
 library(lattice)
 library(caret)
@@ -33,7 +34,7 @@ any(is.na(df)) # Não foi encontrado valores NA em df
 # Verificando as classes da variáveis de df 
 str(df)
 
-# Vetor com os nomes das variáveis a serem convertidas
+# Nomes das variáveis a serem convertidas
 vetores <- c("SIZE", "STATUS", "FUEL")
 
 # Loop para converter os vetores para a classe "factor"
@@ -50,40 +51,89 @@ cat <- names(df)[sapply(df, is.factor) | sapply(df, is.character)]
 # Selecionando numéricas
 num <- names(df)[sapply(df, is.numeric)]
 
-
 # ANÁLISE EXPLORATÓRIA DOS DADOS
+## Desibel
+hist(df$DESIBEL,
+     main = "Altura dos alunos do 1º ano do Ensino Médio",
+     xlab = "Desibel (dB)", ylab = "Freq. Absoluta",
+     col = c("blue"),
+     border = FALSE,
+     xlim = c(70,118), ylim = c(0,2500),
+     labels = TRUE)
 
-# histograma - Airflow
-ggplot(df, aes(x = AIRFLOW)) +
-  geom_histogram(binwidth = 0.5, fill = "lightblue", color = "black") +
-  labs(x = "Valores", y = "Frequência") +
-  theme_minimal() +
-  theme(
-    panel.border = element_blank(),
-    legend.position = "top",
-    legend.title = element_blank(),
-    legend.key.size = unit(0.5, "cm"),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10),
-    plot.title = element_text(size = 14, hjust = 0.5)
-  )+ 
-  ggtitle("Histograma AirFlow")
+## Ao investigar o histograma resultando dos dados obtidos através do
+# decibelímetro que tinha como objetivo medir a intensidadade do som durante o
+# experimento. É visto que a variável Desibel não segue uma distrbuição normal.
+# Além disso esse vetor apresenta dois sino durante a distrbuição uma no
+# inervalo de 80 - 100 dB e outro 100 - 113 dB.
 
-# histograma - Desibel
-ggplot(df, aes(x = DESIBEL)) +
-  geom_histogram(binwidth = 0.5, fill = "lightblue", color = "black") +
-  labs(x = "Valores", y = "Frequência") +
-  theme_minimal() +
-  theme(
-    panel.border = element_blank(),
-    legend.position = "top",
-    legend.title = element_blank(),
-    legend.key.size = unit(0.5, "cm"),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10),
-    plot.title = element_text(size = 14, hjust = 0.5)
-  )+ 
-  ggtitle("Histograma Desibel")
+## Histograma - AirFlow
+hist(df$AIRFLOW,  
+     main = "Fluxo de Ar durante o Experimento", 
+     xlab = "Fluxo de Ar (m/s)", ylab = "Freq. Absoluta", 
+     col = c("blue"), 
+     border = FALSE, 
+     xlim = c(0,18), ylim = c(0,2200),
+     labels = TRUE)
+
+# Observando o histograma da variável Airflow é visto que os maiores picos
+# dos dados estão localizados no primeiro intervalo com fluxo de ar de 0 - 5
+# sendo a maior contagem de Fluxo de Ar proxima a 5 e a segunda maior próxima a
+# 0, ou seja, os extintores de incêndio estão em estado de repouso.
+# A variável Airflow não tem um distrbuição dem formato de sino, um indicativo
+# que não apresenta uma distrbuição normal.
+
+# Boxplot - Airflow
+boxplot(df$AIRFLOW,
+        main = "Boxplot - Fluxo de Ar",
+        ylab = "Fluxo de Ar (m/s)",
+        col = "red")
+
+summary(df$AIRFLOW)
+
+# 1 - Os limite inferior da variável Airflow foi 0 m/s, esse fluxo de ar ocorre
+# com o experimento em estado de repouso. Já o limite superior observado no boxplot
+# foi de 17 m/s.
+# 2 - O ponto do primero quartil foi  3,2 m/s e linha preta que representa a
+# mediana (2° quartil) está localizada em 5,8 m/s e o 3° quaritl 11,2 m/s. Ainda
+# sobre o box plot o 3° quartil aprensata maior concentração dos dados e não foram
+# encontrados valores outliers.
+
+## |Histograma - Frequency
+hist(df$FREQUENCY,  
+     main = "Frequência Durante o Experimento", 
+     xlab = "Frequência (Hz)", ylab = "Freq. Absoluta", 
+     col = c("blue"), 
+     border = FALSE, 
+     xlim = c(0,80), ylim = c(0,2000),
+     labels = TRUE)
+
+# A frequência do som durante o experimento tem um distribuição no intervalor
+# 0 - 20 Hz uniforme, seguida de uma queda no intervalo seguinte. Se mantendo de
+# forma irregular nas medidas de frequência seguintes.
+
+# Boxplot - Frenquecy
+boxplot(df$FREQUENCY,
+        main = "Boxplot - Frenquência",
+        ylab = "Frenquência (Hz)",
+        col = "red")
+
+summary(df$FREQUENCY)
+
+# Distance
+hist(df$DISTANCE,  
+     main = "Distância durante o Experimento", 
+     xlab = "Distância (cm)", ylab = "Freq. Absoluta", 
+     col = c("blue"), 
+     border = FALSE, 
+     xlim = c(0,200), ylim = c(0,2000),
+     labels = TRUE)
+
+# A única barra de contagem irregular no histograma acima é a primeira que
+# Apresentou uma contagem de 1836. As demais seguem uma distrbuição uniforme.
+# Assim como vimos nas variáveis anteriores, essa também não apresentou um 
+# distrbuição normal.
+
 
 ## 1. O que acontece com o sucesso do experimento a medida que o tamanho do
 ## recipiente, ou chama aumenta?
@@ -234,22 +284,9 @@ ggplot(df, aes(x = DESIBEL, fill = STATUS)) +
   ) +
   ggtitle("Distribuição de Sucesso e Falha por Frequência (Hz)")
 
-
-
-# Plotar gráfico de dispersão entre airflow e distancia
-
-
-ggplot(df, aes(x = FREQUENCY, y = AIRFLOW, color = FUEL, shape = FUEL)) +
-  geom_point(size = 3) +
-  scale_size(range = c(1, 10)) +
-  labs(x = "Airflow", y = "Distancia", title = "Gráfico de Dispersão")
-
 # Calcula a matriz de correlação
-
 matrizcorr <- cor(df[,num])
 matriz_melt <- melt(matrizcorr)
-
-
 
 # Definir cores personalizadas
 colors <- c("#FFFFFF", "#FF0000")  # Branco e Vermelho
@@ -269,10 +306,10 @@ ggplot(matriz_melt, aes(Var2, Var1, fill = value)) +
         legend.position = "right")
 
 ## Pré-Processamento
-
 # Label Encoding
 # Criando a codificação categórica
 unique(df$FUEL)
+
 # Transformando a coluna em números
 df$FUEL <- recode(df$FUEL,
                   "gasoline" = 1,
@@ -299,13 +336,13 @@ dados_treinamento <- df[indice_treinamento,]
 dados_teste <- df[-indice_treinamento,]
 
 # Treinar o modelo de regressão logística
-modelo <- train(STATUS ~ ., 
+modelo_glm <- train(STATUS ~ ., 
                 data = dados_treinamento,
                 method = "glm", 
                 family = "binomial")
 
 # Fazer previsões nos dados de teste
-previsoes <- predict(modelo, newdata = dados_teste)
+previsoes <- predict(modelo_glm, newdata = dados_teste)
 
 # Calcular a acurácia
 acuracia <- confusionMatrix(previsoes, dados_teste$STATUS)$overall['Accuracy']
@@ -313,7 +350,59 @@ acuracia <- confusionMatrix(previsoes, dados_teste$STATUS)$overall['Accuracy']
 # Obter a matriz de confusão
 matriz_confusao <- confusionMatrix(previsoes, dados_teste$STATUS)
 
+prop.table(table(df$STATUS))
+
+prop.table(table(dados_treinamento$STATUS))
+
+# Modelo de Classificação KNN
+# Arquivo de controle
+ctrl <- trainControl(method = "repeatedcv", repeats = 3)
+
+# Criando Modelo KNN
+knn_v1 <- train(STATUS ~ ., 
+                data = dados_treinamento,
+                method = "knn",
+                trControl = ctrl,
+                tuneLength = 20)
+
+# Plot
+plot(knn_v1)
+
+# previsões nos dados de teste
+knnpredict <- predict(knn_v1, newdata = dados_teste)
+
+# Calculo da acurácia
+knnacuracia <- confusionMatrix(knnpredict, dados_teste$STATUS)$overall['Accuracy']
+
+# matriz de confusão
+knnmatriz_confusao <- confusionMatrix(knnpredict, dados_teste$STATUS)
 
 
+# Naive bayes)
+modelo_nb <- naiveBayes(STATUS ~ ., 
+                        data = dados_treinamento)
+
+# Fazer previsões nos dados de teste
+predict_nb <- predict(modelo_nb, newdata = dados_teste)
+
+# Calcular a acurácia
+acuracia_nb <- confusionMatrix(predict_nb, dados_teste$STATUS)$overall['Accuracy']
+
+# Obter a matriz de confusão
+matriz_confusaonb <- confusionMatrix(predict_nb, dados_teste$STATUS)
 
 
+# Random Forest
+modelo_rf <- randomForest(STATUS ~ .,
+                          data = dados_treinamento,
+                          ntree = 500,
+                          mtry = 5)
+
+# Fazer previsões nos dados de teste
+predict_rf <- predict(modelo_rf, newdata = dados_teste)
+
+# Calcular a acurácia
+acuracia_rf <- confusionMatrix(predict_rf, dados_teste$STATUS)$overall['Accuracy']
+
+# Obter a matriz de confusão
+matriz_confusaorf <- confusionMatrix(predict_rf, dados_teste$STATUS)
