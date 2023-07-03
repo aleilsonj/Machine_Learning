@@ -1,0 +1,350 @@
+---
+title: "Machine Learning na Segurança do Trabalho: Prevendo a Eficiência de Extintores de Incêndio"
+author: "José Aleilson"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Definindo diretório de trabalho
+setwd("C:/Users/ALEILSON/Documents/github/Machine_Learning/Projeto 3 - Prevendo a Eficiência de Extintores de Incêndio/Acoustic_Extinguisher_Fire_Dataset")
+getwd()
+
+# Pacotes utilizados
+library(readxl)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(e1071)
+library(randomForest)
+library(lattice)
+library(caret)
+
+# Carregando dataset
+df <- read_xlsx("Acoustic_Extinguisher_Fire_Dataset.xlsx")
+
+# Verificando a existência de valores NA em df
+any(is.na(df)) # Não foi encontrado valores NA em df
+
+# Verificando as classes da variáveis de df 
+str(df)
+
+# Nomes das variáveis a serem convertidas
+vetores <- c("SIZE", "STATUS", "FUEL")
+
+# Loop para converter os vetores para a classe "factor"
+for (vetor in vetores) {
+  df[[vetor]] <- as.factor(df[[vetor]])
+}
+
+# Verificando as classes da variáveis de df 
+str(df)
+
+# Selecionando variáveis catégoricas
+cat <- names(df)[sapply(df, is.factor) | sapply(df, is.character)]
+
+# Selecionando numéricas
+num <- names(df)[sapply(df, is.numeric)]
+        
+```
+
+# Introdução
+
+Um procedimento estabelecido pelas normas da ABNT é o teste hidrostático de extintor. Esse teste determina que todos os extintores devem ser testados a cada cinco anos com o objetivo de detectar possíveis falhas. No entanto, surge a questão de se seria possível criar um modelo de Machine Learning para prever o funcionamento de um extintor de incêndio com base em simulações feitas no computador.
+
+Os dados obtidos neste trabalho são resultado de um experimento de extinção de chamas utilizando quatro tipos diferentes de combustíveis, utilizando um sistema de extinção por ondas sonoras. A partir desses dados, foram fornecidos seis recursos de entrada e um de saída, que será objeto de predição do nosso modelo de Machine Learning. Essa variável nos indica se o experimento foi bem-sucedido ou falhou, ou seja, se conseguimos extinguir as chamas para os respectivos combustíveis e situações durante o teste.
+
+# Análise Exploratória
+
+```{r echo = FALSE, results = "hide"}
+hist(df$DESIBEL,
+     main = "Histograma Decibel",
+     xlab = "Desibel (dB)", ylab = "Freq. Absoluta",
+     col = c("blue"),
+     border = FALSE,
+     xlim = c(70,118), ylim = c(0,2500),
+     labels = TRUE)
+```
+
+Ao investigar o histograma resultante dos dados obtidos através do decibelímetro, cujo objetivo era medir a intensidade do som durante o experimento, percebe-se que a variável "Decibel" não segue uma distribuição normal. Além disso, esse vetor apresenta duas áreas de concentração durante a distribuição: uma no intervalo de 80 a 100 dB e outra de 100 a 113 dB.
+
+```{r echo = FALSE, results = "hide"}
+# Boxplot - Desibel
+boxplot(df$DESIBEL,
+        main = "Boxplot - Desibel",
+        ylab = "Desibel (dB)",
+        col = "red")
+```
+
+A variável decibel tem como valor mínimo 72 dB e valor máximo 113 dB. Essa variável apresentou uma maior concentração de dados no terceiro quartil em comparação com o primeiro quartil. Ao observar o boxplot do decibel, não foram detectados valores extremos.
+
+```{r echo = FALSE, results = "hide"}
+## Histograma - AirFlow
+hist(df$AIRFLOW,  
+     main = "Fluxo de Ar durante o Experimento", 
+     xlab = "Fluxo de Ar (m/s)", ylab = "Freq. Absoluta", 
+     col = c("blue"), 
+     border = FALSE, 
+     xlim = c(0,18), ylim = c(0,2200),
+     labels = TRUE)
+
+```
+
+Observando o histograma da variável "Airflow", nota-se que os maiores picos dos dados estão localizados no primeiro intervalo, com fluxo de ar de 0 a 5. A contagem mais alta de Fluxo de Ar é próxima a 5, enquanto a segunda contagem mais alta é próxima a 0, o que indica que os extintores de incêndio estão em estado de repouso.
+
+Além disso, a variável "Airflow" não possui uma distribuição em formato de sino, o que indica que não segue uma distribuição normal.
+
+```{r echo = FALSE, results = "hide"}
+# Boxplot - Airflow
+boxplot(df$AIRFLOW,
+        main = "Boxplot - Fluxo de Ar",
+        ylab = "Fluxo de Ar (m/s)",
+        col = "red")
+```
+
+1 - O limite inferior da variável "Airflow" foi de 0 m/s, indicando que esse fluxo de ar ocorre quando o experimento está em estado de repouso. Já o limite superior observado no boxplot foi de 17 m/s.
+
+2 - O valor do primeiro quartil foi de 3,2 m/s, enquanto a linha preta que representa a mediana (2º quartil) está localizada em 5,8 m/s e o terceiro quartil em 11,2 m/s. Em relação ao box plot, o terceiro quartil apresenta uma maior concentração dos dados, e nenhum valor considerado outlier foi encontrado.
+
+```{r echo = FALSE, results = "hide"}
+hist(df$FREQUENCY,  
+     main = "Frequência Durante o Experimento", 
+     xlab = "Frequência (Hz)", ylab = "Freq. Absoluta", 
+     col = c("blue"), 
+     border = FALSE, 
+     xlim = c(0,80), ylim = c(0,2000),
+     labels = TRUE)
+```
+
+A frequência do som durante o experimento possui uma distribuição uniforme no intervalo de 0 a 20 Hz, seguida de uma queda no intervalo seguinte. Posteriormente, mantém-se de forma irregular nas medidas de frequência subsequentes.
+
+```{r echo = FALSE, results = "hide"}
+boxplot(df$FREQUENCY,
+        main = "Boxplot - Frenquência",
+        ylab = "Frenquência (Hz)",
+        col = "red")
+```
+
+Os valores mínimos e máximos observados na variável frequency foram, respectivamente, 1 Hz e 75 Hz, enquanto a mediana, que representa o segundo quartil, foi de 27,5 Hz. Não foram detectados valores outliers nessa variável. Foi observada uma maior concentração de dados no terceiro quartil.
+
+```{r echo = FALSE, results = "hide"}
+hist(df$DISTANCE,  
+     main = "Distância durante o Experimento", 
+     xlab = "Distância (cm)", ylab = "Freq. Absoluta", 
+     col = c("blue"), 
+     border = FALSE, 
+     xlim = c(0,200), ylim = c(0,2000),
+     labels = TRUE)
+```
+
+A única barra de contagem irregular no histograma é a primeira, que apresentou uma contagem de 1836. As demais barras seguem uma distribuição uniforme. Assim como observado nas variáveis anteriores, esta variável também não apresenta uma distribuição normal.
+
+```{r echo = FALSE}
+# criando tabela cruzada de frenquência entre SIZE e STATUS
+tab <- table(df$SIZE, df$STATUS)
+
+# Editando os cabeçalhos das colunas
+colnames(tab) <- c("Falha", "Sucesso")
+
+# obtendo a tabela de frequências relativas fixando as colunas da tabela 
+tab2 = prop.table(tab, margin=2)
+```
+
+```{r echo = FALSE, results = "hide"}
+plot(tab2,  xlab = "Tamanho do Combustivel", ylab="Resultado do Experimento", 
+     col=c("lightblue","darkblue"),
+     main=c("Grafico de mosaicos para as variáveis tipo",
+            "Size e Status"))
+```
+
+Considerando os combustíveis líquidos, ao observar a relação entre as variáveis Size, que representa o tamanho do recipiente do combustível, e o tamanho da chama, e Status, que representa se o experimento de apagar as chamas foi um sucesso ou não, nota-se que conforme o tamanho do recipiente aumenta de 1 a 5, ou seja, o tamanho da chama, o número de falhas ao extinguir a chama também aumenta. Consequentemente, o número de sucessos na extinção das chamas no experimento proposto diminui.
+
+Considerando o combustível GLP (gás), observa-se que à medida que o tamanho da chama aumenta de 6 a 7, as falhas ao extinguir as chamas também aumentam. Por outro lado, o número de sucessos reduz. É possível observar um padrão nessas informações entre as variáveis Size e Status, um padrão inverso, em que à medida que um aumenta, o outro diminui.
+
+```{r echo = FALSE}
+# criando tabela cruzada de frenquência entre FUEL e STATUS
+tab1 <- table(df$FUEL, df$STATUS)
+
+# Editando os cabeçalhos das colunas
+colnames(tab1) <- c("Falha", "Sucesso")
+
+# Editando os cabeçalhos das linhas
+rownames(tab1) <- c("Gasolina", "Querosene", "GLP", "Thinner")
+
+# obtendo a tabela de frequências relativas fixando as colunas da tabela 
+tab1 = prop.table(tab1, margin=2)
+```
+
+```{r echo = FALSE, results = "hide"}
+plot(tab1,  xlab = "Tipo de Combustivel", ylab="Resultado do Experimento", 
+     col=c("lightblue","darkblue"),
+     main=c("Grafico de mosaicos para as variáveis tipo",
+            "Fuel e Status"))
+```
+
+O número de sucessos observados no experimento variou entre os diferentes 
+tipos de combustíveis. No caso da gasolina, foi observado um maior número de sucessos em comparação com as falhas relacionadas a esse combustível. 
+Por outro lado, o querosene apresentou um número superior de falhas ao 
+extinguir as chamas. Esse mesmo padrão se repete com o thinner Já o GLP (GÁS DE PETRÓLEO LIQUEFEITO) tem um comportamento semelhante ao da gasolina, com um número superior de sucessos na tentativa de extinguir as chamas.
+
+```{r echo = FALSE, results = "hide"}
+ggplot(df, aes(x = DISTANCE, fill = STATUS)) +
+  geom_density(alpha = 0.5) +  
+  labs(x = "Distância", y = "Densidade", fill = "Status") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
+  theme_minimal() +
+  theme(
+    panel.border = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.key.size = unit(0.5, "cm"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  ) +
+  ggtitle("Densidade de Sucesso e Falha por Distância")
+```
+
+Ao observar o gráfico acima, podemos deduzir que à medida que a distância aumenta, o número de sucessos na extinção de chamas diminui. Outro ponto interessante observado nesse gráfico é que quando a distância atinge o intervalo de 100 a 110 cm, as linhas de falhas e sucessos se cruzam, indicando que nessa distância as falhas e os sucessos são equilibrados.
+
+
+```{r echo = FALSE, results = "hide"}
+ggplot(df, aes(x = AIRFLOW, fill = STATUS)) +
+  geom_density(alpha = 0.5) +  
+  labs(x = "Fluxo de Ar", y = "Densidade", fill = "Status") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
+  theme_minimal() +
+  theme(
+    panel.border = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.key.size = unit(0.5, "cm"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  ) +
+  ggtitle("Densidade de Sucesso e Falha por Fluxo de Ar")
+
+```
+
+Ao observar o gráfico plot2, especialmente as barras vermelhas que representam as falhas, é possível perceber que a maioria delas está concentrada nos fluxos de ar mais baixos. Por consequência, os fluxos de ar mais altos apresentaram uma maior proporção de sucesso na extinção das chamas. Portanto, fazendo uma análise simples desse gráfico, podemos concluir que quanto maior o fluxo de ar, maiores são as chances de sucesso no experimento.
+
+```{r echo = FALSE, results = "hide"}
+ggplot(df, aes(x = FREQUENCY, fill = STATUS)) +
+  geom_density(alpha = 0.5) +  
+  labs(x = "Frequência (Hz)", y = "Densidade", fill = "Status") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
+  theme_minimal() +
+  theme(
+    panel.border = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.key.size = unit(0.5, "cm"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  ) +
+  ggtitle("Densidade de Sucesso e Falha por Frequência (Hz)")
+
+```
+
+Ao analisar o resultado do gráfico de densidade no gráfico 3, observa-se que quando a frequência está próxima de 6 Hz, há um maior número de falhas. À medida que a frequência aumenta para 8 Hz, foi observado um aumento no número de sucessos em comparação com as falhas. Esse padrão é observado até 40 Hz. No entanto, a partir de 40 Hz em diante, o número de falhas é superior ao número de sucessos.
+
+```{r echo = FALSE, results = "hide"}
+ggplot(df, aes(x = DESIBEL, fill = STATUS)) +
+  geom_density(alpha = 0.5) +  
+  labs(x = "Decibel (dB)", y = "Densidade", fill = "Status") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
+  theme_minimal() +
+  theme(
+    panel.border = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.key.size = unit(0.5, "cm"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  ) +
+  ggtitle("Distribuição de Sucesso e Falha por Decibel")
+```
+
+O número de sucessos e falhas no experimento apresentou um comportamento semelhante. Observamos poucos casos no intervalo de 70 dB até um pouco mais de 80 dB e, ao nos aproximarmos de 85 dB, podemos observar um aumento nas observações para ambos os casos, seguido de uma queda aos 90 dB. Um padrão semelhante ocorre quando o experimento atinge os 100 dB.
+
+```{r echo = FALSE}
+# Calcula a matriz de correlação
+matrizcorr <- cor(df[,num])
+matriz_melt <- melt(matrizcorr)
+
+# Definir cores personalizadas
+colors <- c("#FFFFFF", "#FF0000")
+```
+
+```{r echo = FALSE, results = "hide"}
+# Plotar o heatmap com texto
+ggplot(matriz_melt, aes(Var2, Var1, fill = value)) +
+  geom_tile(color = "black") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 3) +
+  scale_fill_gradientn(colors = colors) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.border = element_blank(),
+    legend.position = "right",
+    legend.title = element_blank(),
+    legend.key.size = unit(0.5, "cm"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  ) +
+  labs(x = NULL, y = NULL) +
+  ggtitle("Heatmap Correlação")
+```
+
+As variáveis Distance e Airflow apresentaram uma alta correlação negativa (-0,71), o que indica uma associação forte e inversa entre elas. Essa correlação próxima de -1 sugere que, à medida que a distância aumenta, o fluxo de ar diminui e vice-versa. Essas variáveis requerem atenção especial durante a criação do modelo, pois a alta correlação entre elas pode causar problemas de multicolinearidade.
+
+A multicolinearidade ocorre quando duas ou mais variáveis independentes estão altamente correlacionadas entre si. Isso pode afetar negativamente a interpretação dos coeficientes estimados e a estabilidade do modelo. Para evitar problemas decorrentes da multicolinearidade, é importante considerar estratégias como a remoção de uma das variáveis altamente correlacionadas.
+
+# Pré-Processamento
+
+O pré-processamento de dados é uma etapa essencial na preparação de dados para a análise e construção de modelos de machine learning. Consiste em uma série de técnicas e procedimentos aplicados aos dados brutos com o objetivo de melhorar a qualidade dos dados, reduzir ruídos, tratar valores ausentes e outliers, além de preparar os dados de acordo com as necessidades específicas do modelo.
+
+## Label Encoding
+
+O Label Encoding é uma técnica de pré-processamento de dados usada para transformar variáveis categóricas em valores numéricos. Ele atribui um valor inteiro único para cada categoria presente na variável, permitindo que algoritmos de machine learning processem esses dados.
+
+#### Aplicando label encoding na variável FUEL
+
+```{r echo = TRUE, results = "hide"}
+df$FUEL <- recode(df$FUEL,
+                  "gasoline" = 1,
+                  "kerosene" = 2,
+                  "thinner" = 3,
+                  "lpg" = 4)
+```
+
+### Padronização
+
+A padronização dos dados é uma técnica de pré-processamento que visa transformar as variáveis em uma escala com média zero e desvio padrão igual a um. Essa técnica é importante para garantir que as variáveis estejam na mesma escala e tenham a mesma ordem de grandeza.
+
+#### Aplicando padronização
+
+```{r echo = TRUE, results = "hide"}
+df[, num] <- scale(df[, num])
+```
+
+### Divisão em treino e teste
+
+A divisão dos dados em treino e teste é essencial para avaliar a capacidade de generalização de modelos de machine learning. Uma parte dos dados é usada para treinar o modelo e outra parte é reservada para testá-lo. Isso evita que o modelo se ajuste excessivamente aos dados de treinamento.
+
+#### Aplicando divisão em dados de treino e teste
+```{r echo = FALSE}
+set.seed(10)
+```
+
+```{r echo = TRUE, results = "hide"}
+indice_treinamento <- createDataPartition(df$FUEL, p = 0.7, list = FALSE)
+dados_treinamento <- df[indice_treinamento,]
+dados_teste <- df[-indice_treinamento,]
+```
+
