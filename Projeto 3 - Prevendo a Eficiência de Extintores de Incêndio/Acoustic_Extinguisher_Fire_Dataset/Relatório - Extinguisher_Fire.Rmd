@@ -1,9 +1,12 @@
 ---
-title: "Machine Learning na Segurança do Trabalho: Prevendo a Eficiência de Extintores de Incêndio"
+title: 'Machine Learning na Segurança do Trabalho: Prevendo a Eficiência de Extintores
+  de Incêndio'
 author: "José Aleilson"
 output:
+  word_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -49,28 +52,71 @@ num <- names(df)[sapply(df, is.numeric)]
         
 ```
 
-# Introdução
+## Introdução
 
-Um procedimento estabelecido pelas normas da ABNT é o teste hidrostático de extintor. Esse teste determina que todos os extintores devem ser testados a cada cinco anos com o objetivo de detectar possíveis falhas. No entanto, surge a questão de se seria possível criar um modelo de Machine Learning para prever o funcionamento de um extintor de incêndio com base em simulações feitas no computador.
+Um procedimento estabelecido pelas normas da ABNT é o teste hidrostático de extintor. Esse teste determina que todos os extintores devem ser testados a cada cinco anos com o objetivo de detectar possíveis falhas.
+
+O teste hidrostático de extintor pode ser realizado em diversas formas de pressão. Esse procedimento é realizado por profissionais técnicos dessa área, que utilizam equipamentos e aparelhos específicos para esse teste.
+
+No entanto, com o objetivo de aumentar a segurança nesse procedimento, surge a questão de se seria possível criar um modelo de Machine Learning capaz de **prever o funcionamento de um extintor de incêndio com base em simulações feitas no computador, adicionando assim mais uma camada de segurança a esse trabalho**.
 
 Os dados obtidos neste trabalho são resultado de um experimento de extinção de chamas utilizando quatro tipos diferentes de combustíveis, utilizando um sistema de extinção por ondas sonoras. A partir desses dados, foram fornecidos seis recursos de entrada e um de saída, que será objeto de predição do nosso modelo de Machine Learning. Essa variável nos indica se o experimento foi bem-sucedido ou falhou, ou seja, se conseguimos extinguir as chamas para os respectivos combustíveis e situações durante o teste.
 
-# Análise Exploratória
+## Metodologia
+
+A metodologia adotada consiste em realizar uma análise exploratória dos dados, seguida pelo pré-processamento e modelagem de Machine Learning. Os modelos a serem explorados incluem GLM, KNN, Random Forest e Naive Bayes. A análise dos resultados envolverá comparação de desempenho dos modelos, além da visualização dos resultados com gráficos.
+
+1. Análise exploratória de dados:
+
+Realizar uma análise preliminar dos dados para compreender sua estrutura e características.
+Utilizar a biblioteca ggplot2 para criar visualizações gráficas que ajudem na compreensão dos dados.
+Explorar a distribuição das variáveis e identificar possíveis padrões ou outliers.
+
+2. Pré-processamento dos dados:
+
+Realizar limpeza dos dados, tratando valores ausentes, inconsistências e outliers, se necessário.
+Utilizar a biblioteca dplyr para realizar transformações nos dados, como filtragem, agregação ou criação de novas variáveis, se necessário.
+Separar os dados em conjuntos de treinamento e teste.
+
+3. Modelagem de Machine Learning:
+
+Utilizar a biblioteca e1071 para criar um modelo de Naive Bayes.
+Utilizar a biblioteca randomForest para criar um modelo de Random Forest.
+Utilizar a biblioteca caret para criar modelos adicionais, como o GLM e KNN, e realizar a otimização de hiperparâmetros.
+Treinar e avaliar os modelos 
+
+4. Análise dos resultados:
+
+Comparar o desempenho dos diferentes modelos de Machine Learning utilizando métricas apropriadas, como acurácia, precisão, recall ou F1-score.
+Analisar as características e importância das variáveis no contexto do problema.
+Identificar o modelo com melhor desempenho para a previsão do funcionamento do extintor.
+
+
+## Análise Exploratória
+
+Serão exploradas as distribuições das variáveis e identificados possíveis padrões ou outliers. Serão aplicadas técnicas de limpeza de dados e transformações. A análise exploratória tem como objetivo compreender a estrutura e características dos dados, fornecendo insights iniciais para o pré-processamento e a modelagem subsequente.
+
+### Análise Univariada
+
+#### Desibel
+
+A variável decibel contém informações sobre a intensidade do som. Nesse experimento de extinção de chamas, diferentes ondas sonoras foram utilizadas com o objetivo de extinguir as chamas. Para medir a intensidade do som, um decibelímetro foi utilizado.
 
 ```{r echo = FALSE, results = "hide"}
 hist(df$DESIBEL,
-     main = "Histograma Decibel",
+     main = "Histograma - Desibel",
      xlab = "Desibel (dB)", ylab = "Freq. Absoluta",
      col = c("blue"),
      border = FALSE,
      xlim = c(70,118), ylim = c(0,2500),
-     labels = TRUE)
+     labels = FALSE)
 ```
 
-Ao investigar o histograma resultante dos dados obtidos através do decibelímetro, cujo objetivo era medir a intensidade do som durante o experimento, percebe-se que a variável "Decibel" não segue uma distribuição normal. Além disso, esse vetor apresenta duas áreas de concentração durante a distribuição: uma no intervalo de 80 a 100 dB e outra de 100 a 113 dB.
+Ao investigar o histograma resultante dos dados obtidos através do decibelímetro, cujo objetivo era medir a intensidade do som durante o experimento, percebe-se que a variável Decibel não segue uma distribuição normal. Além disso, esse vetor apresenta duas áreas de concentração durante a distribuição: uma no intervalo de 80 a 100 dB e outra de 100 a 113 dB.
+
+Agora vamos analisar um boxplot da variável decibel para identificar possíveis valores atípicos (outliers).
 
 ```{r echo = FALSE, results = "hide"}
-# Boxplot - Desibel
 boxplot(df$DESIBEL,
         main = "Boxplot - Desibel",
         ylab = "Desibel (dB)",
@@ -79,66 +125,84 @@ boxplot(df$DESIBEL,
 
 A variável decibel tem como valor mínimo 72 dB e valor máximo 113 dB. Essa variável apresentou uma maior concentração de dados no terceiro quartil em comparação com o primeiro quartil. Ao observar o boxplot do decibel, não foram detectados valores extremos.
 
+#### Airflow
+
+Os valores dessa variável foram obtidos durante a fase de extinção das chamas. Esses valores foram gerados pelas ondas sonoras utilizadas durante o processo de extinção, tanto pelo extintor de incêndio quanto pelo recipiente com a chama.
+
 ```{r echo = FALSE, results = "hide"}
-## Histograma - AirFlow
 hist(df$AIRFLOW,  
-     main = "Fluxo de Ar durante o Experimento", 
-     xlab = "Fluxo de Ar (m/s)", ylab = "Freq. Absoluta", 
+     main = "Histograma Airflow", 
+     xlab = "Airflow (m/s)", ylab = "Freq. Absoluta", 
      col = c("blue"), 
      border = FALSE, 
      xlim = c(0,18), ylim = c(0,2200),
-     labels = TRUE)
-
+     labels = FALSE)
 ```
 
-Observando o histograma da variável "Airflow", nota-se que os maiores picos dos dados estão localizados no primeiro intervalo, com fluxo de ar de 0 a 5. A contagem mais alta de Fluxo de Ar é próxima a 5, enquanto a segunda contagem mais alta é próxima a 0, o que indica que os extintores de incêndio estão em estado de repouso.
+Observando o histograma da variável Airflow, nota-se que os maiores picos dos dados estão localizados no primeiro intervalo, com fluxo de ar de 0 a 5. A contagem mais alta de Fluxo de Ar é próxima a 5, enquanto a segunda contagem mais alta é próxima a 0, o que indica que os extintores de incêndio estão em estado de repouso.
 
 Além disso, a variável "Airflow" não possui uma distribuição em formato de sino, o que indica que não segue uma distribuição normal.
 
+Agora iremos analisar um boxplot da variável Airflow para identificar possíveis valores outliers.
+
 ```{r echo = FALSE, results = "hide"}
-# Boxplot - Airflow
 boxplot(df$AIRFLOW,
-        main = "Boxplot - Fluxo de Ar",
-        ylab = "Fluxo de Ar (m/s)",
+        main = "Boxplot - Airflow",
+        ylab = "Airflow (m/s)",
         col = "red")
 ```
 
-1 - O limite inferior da variável "Airflow" foi de 0 m/s, indicando que esse fluxo de ar ocorre quando o experimento está em estado de repouso. Já o limite superior observado no boxplot foi de 17 m/s.
+O limite inferior da variável "Airflow" foi de 0 m/s, indicando que esse fluxo de ar ocorre quando o experimento está em estado de repouso. Já o limite superior observado no boxplot foi de 17 m/s.
 
-2 - O valor do primeiro quartil foi de 3,2 m/s, enquanto a linha preta que representa a mediana (2º quartil) está localizada em 5,8 m/s e o terceiro quartil em 11,2 m/s. Em relação ao box plot, o terceiro quartil apresenta uma maior concentração dos dados, e nenhum valor considerado outlier foi encontrado.
+O valor do primeiro quartil foi de 3,2 m/s, enquanto a linha preta que representa a mediana (2º quartil) está localizada em 5,8 m/s e o terceiro quartil em 11,2 m/s. Em relação ao box plot, o terceiro quartil apresenta uma maior concentração dos dados, e nenhum valor considerado outlier foi encontrado.
+
+#### Frequency
+
+Esse vetor representa a frequência das ondas sonoras no processo de extinção das chamas. Os experimentos de extinção de incêndio foram conduzidos utilizando 54 ondas sonoras de frequências diferentes para cada distância e tamanho da chama.
 
 ```{r echo = FALSE, results = "hide"}
 hist(df$FREQUENCY,  
-     main = "Frequência Durante o Experimento", 
-     xlab = "Frequência (Hz)", ylab = "Freq. Absoluta", 
+     main = "Histograma - Frequency", 
+     xlab = "Frequency (Hz)", ylab = "Freq. Absoluta", 
      col = c("blue"), 
      border = FALSE, 
      xlim = c(0,80), ylim = c(0,2000),
-     labels = TRUE)
+     labels = FALSE)
 ```
 
 A frequência do som durante o experimento possui uma distribuição uniforme no intervalo de 0 a 20 Hz, seguida de uma queda no intervalo seguinte. Posteriormente, mantém-se de forma irregular nas medidas de frequência subsequentes.
 
+Vamos analisar um boxplot para verificar a existência de possíveis valores atípicos.
+
 ```{r echo = FALSE, results = "hide"}
 boxplot(df$FREQUENCY,
-        main = "Boxplot - Frenquência",
-        ylab = "Frenquência (Hz)",
+        main = "Boxplot - Frequency",
+        ylab = "Frequency (Hz)",
         col = "red")
 ```
 
 Os valores mínimos e máximos observados na variável frequency foram, respectivamente, 1 Hz e 75 Hz, enquanto a mediana, que representa o segundo quartil, foi de 27,5 Hz. Não foram detectados valores outliers nessa variável. Foi observada uma maior concentração de dados no terceiro quartil.
 
+#### Distance
+
+Essa variável representa a distância entre o extintor e o recipiente de combustível. Durante a realização de cada experimento, o recipiente de combustível, inicialmente posicionado a uma distância de 10 cm, foi movido para frente até atingir 190 cm, aumentando a distância em 10 cm a cada etapa.
+
 ```{r echo = FALSE, results = "hide"}
 hist(df$DISTANCE,  
-     main = "Distância durante o Experimento", 
-     xlab = "Distância (cm)", ylab = "Freq. Absoluta", 
+     main = "Histograma - Distance", 
+     xlab = "Distance (cm)", ylab = "Freq. Absoluta", 
      col = c("blue"), 
      border = FALSE, 
      xlim = c(0,200), ylim = c(0,2000),
-     labels = TRUE)
+     labels = FALSE)
 ```
 
 A única barra de contagem irregular no histograma é a primeira, que apresentou uma contagem de 1836. As demais barras seguem uma distribuição uniforme. Assim como observado nas variáveis anteriores, esta variável também não apresenta uma distribuição normal.
+
+### Análise Bivariada
+
+#### Size e Status
+O vetor Size traz informações relacionadas aos tamanhos dos recipientes de combustíveis. Durante o experimento, foram utilizados dois tipos de combustíveis: líquido e gás. Para os combustíveis líquidos, temos cinco tamanhos diferentes medidos em centímetros. Para os combustíveis a gás, temos a opção de ajuste de gás para meio e cheio.
 
 ```{r echo = FALSE}
 # criando tabela cruzada de frenquência entre SIZE e STATUS
@@ -158,9 +222,15 @@ plot(tab2,  xlab = "Tamanho do Combustivel", ylab="Resultado do Experimento",
             "Size e Status"))
 ```
 
-Considerando os combustíveis líquidos, ao observar a relação entre as variáveis Size, que representa o tamanho do recipiente do combustível, e o tamanho da chama, e Status, que representa se o experimento de apagar as chamas foi um sucesso ou não, nota-se que conforme o tamanho do recipiente aumenta de 1 a 5, ou seja, o tamanho da chama, o número de falhas ao extinguir a chama também aumenta. Consequentemente, o número de sucessos na extinção das chamas no experimento proposto diminui.
+Ao considerar os combustíveis líquidos, ao observar a relação entre as variáveis Size (que representa o tamanho do recipiente de combustível/tamanho da chama) e Status (que indica se o experimento de extinguir as chamas foi um sucesso ou não), nota-se que, à medida que o tamanho do recipiente aumenta de 1 a 5, ou seja, o tamanho da chama aumenta, o número de falhas ao extinguir a chama também aumenta. Consequentemente, o número de sucessos na extinção das chamas no experimento diminui.
 
-Considerando o combustível GLP (gás), observa-se que à medida que o tamanho da chama aumenta de 6 a 7, as falhas ao extinguir as chamas também aumentam. Por outro lado, o número de sucessos reduz. É possível observar um padrão nessas informações entre as variáveis Size e Status, um padrão inverso, em que à medida que um aumenta, o outro diminui.
+Considerando o combustível GLP (gás), observa-se que, à medida que o tamanho da chama aumenta de 6 a 7, ou seja, o recipiente muda de meio para cheio, o número de falhas ao extinguir as chamas também aumenta. Por outro lado, o número de sucessos diminui.
+
+Com isso, é possível observar um padrão após analisar as informações obtidas a partir desse gráfico entre as variáveis Size e Status. Observa-se um padrão inverso, em que, à medida que o tamanho do recipiente de combustível aumenta, o número de sucessos ao extinguir as chamas reduz.
+
+#### Fuel e Status
+
+Nesse experimento, foram utilizados dois tipos de combustíveis: líquidos e combustíveis a gás. Entre os líquidos, temos três tipos distintos, enquanto para os combustíveis a gás temos dois tipos.
 
 ```{r echo = FALSE}
 # criando tabela cruzada de frenquência entre FUEL e STATUS
@@ -183,15 +253,16 @@ plot(tab1,  xlab = "Tipo de Combustivel", ylab="Resultado do Experimento",
             "Fuel e Status"))
 ```
 
-O número de sucessos observados no experimento variou entre os diferentes 
-tipos de combustíveis. No caso da gasolina, foi observado um maior número de sucessos em comparação com as falhas relacionadas a esse combustível. 
-Por outro lado, o querosene apresentou um número superior de falhas ao 
-extinguir as chamas. Esse mesmo padrão se repete com o thinner Já o GLP (GÁS DE PETRÓLEO LIQUEFEITO) tem um comportamento semelhante ao da gasolina, com um número superior de sucessos na tentativa de extinguir as chamas.
+O número de sucessos observados no experimento variou entre os diferentes tipos de combustíveis. No caso da gasolina, foi observado um maior número de sucessos em comparação com as falhas relacionadas a esse combustível. Por outro lado, o querosene apresentou um número superior de falhas ao extinguir as chamas. Esse mesmo padrão se repete com o thinner Já o GLP (GÁS DE PETRÓLEO LIQUEFEITO) tem um comportamento semelhante ao da gasolina, com um número superior de sucessos na tentativa de extinguir as chamas.
+
+#### Dintance e Status
+
+**1. O que acontece com o experimento a medida que a distância aumenta?**
 
 ```{r echo = FALSE, results = "hide"}
 ggplot(df, aes(x = DISTANCE, fill = STATUS)) +
   geom_density(alpha = 0.5) +  
-  labs(x = "Distância", y = "Densidade", fill = "Status") +
+  labs(x = "Distance", y = "Densidade", fill = "Status") +
   scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
   theme_minimal() +
   theme(
@@ -203,16 +274,19 @@ ggplot(df, aes(x = DISTANCE, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Densidade de Sucesso e Falha por Distância")
+  ggtitle("Densidade Distance por Status")
 ```
 
 Ao observar o gráfico acima, podemos deduzir que à medida que a distância aumenta, o número de sucessos na extinção de chamas diminui. Outro ponto interessante observado nesse gráfico é que quando a distância atinge o intervalo de 100 a 110 cm, as linhas de falhas e sucessos se cruzam, indicando que nessa distância as falhas e os sucessos são equilibrados.
 
+#### Airflow e Status
+
+**2. Como o Fluxo de Ar afeta o sucesso do experimento?**
 
 ```{r echo = FALSE, results = "hide"}
 ggplot(df, aes(x = AIRFLOW, fill = STATUS)) +
   geom_density(alpha = 0.5) +  
-  labs(x = "Fluxo de Ar", y = "Densidade", fill = "Status") +
+  labs(x = "Airflow", y = "Densidade", fill = "Status") +
   scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
   theme_minimal() +
   theme(
@@ -224,16 +298,19 @@ ggplot(df, aes(x = AIRFLOW, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Densidade de Sucesso e Falha por Fluxo de Ar")
-
+  ggtitle("Densidade Airflow por Status")
 ```
 
-Ao observar o gráfico plot2, especialmente as barras vermelhas que representam as falhas, é possível perceber que a maioria delas está concentrada nos fluxos de ar mais baixos. Por consequência, os fluxos de ar mais altos apresentaram uma maior proporção de sucesso na extinção das chamas. Portanto, fazendo uma análise simples desse gráfico, podemos concluir que quanto maior o fluxo de ar, maiores são as chances de sucesso no experimento.
+Ao observar o gráfico, especialmente as áreas em vermelho que representam as falhas, é possível perceber que a maioria delas está concentrada nos fluxos de ar mais baixos. Por outro lado, os fluxos de ar mais altos apresentam uma maior proporção de sucesso na extinção das chamas. Portanto, realizando uma análise simples desse gráfico, podemos concluir que quanto maior o fluxo de ar, maiores são as chances de sucesso no experimento.
+
+#### Frequency e Status
+
+**3. Qual a relação entre frequência e resultado do experimento?**
 
 ```{r echo = FALSE, results = "hide"}
 ggplot(df, aes(x = FREQUENCY, fill = STATUS)) +
   geom_density(alpha = 0.5) +  
-  labs(x = "Frequência (Hz)", y = "Densidade", fill = "Status") +
+  labs(x = "Frequency (Hz)", y = "Densidade", fill = "Status") +
   scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
   theme_minimal() +
   theme(
@@ -245,16 +322,20 @@ ggplot(df, aes(x = FREQUENCY, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Densidade de Sucesso e Falha por Frequência (Hz)")
+  ggtitle("Densidade Frequency (Hz) por Status")
 
 ```
 
-Ao analisar o resultado do gráfico de densidade no gráfico 3, observa-se que quando a frequência está próxima de 6 Hz, há um maior número de falhas. À medida que a frequência aumenta para 8 Hz, foi observado um aumento no número de sucessos em comparação com as falhas. Esse padrão é observado até 40 Hz. No entanto, a partir de 40 Hz em diante, o número de falhas é superior ao número de sucessos.
+Ao analisar o resultado do gráfico de densidade, observa-se que quando a frequência está próxima de 6 Hz, há um maior número de falhas. À medida que a frequência aumenta para 8 Hz, foi observado um aumento no número de sucessos em comparação com as falhas. Esse padrão é observado até 40 Hz. No entanto, a partir de 40 Hz em diante, o número de falhas é superior ao número de sucessos.
+
+#### Desibel e Status
+
+**4. Como o resultado do experimeto é alterado a medida que a decibel aumenta?**
 
 ```{r echo = FALSE, results = "hide"}
 ggplot(df, aes(x = DESIBEL, fill = STATUS)) +
   geom_density(alpha = 0.5) +  
-  labs(x = "Decibel (dB)", y = "Densidade", fill = "Status") +
+  labs(x = "Desibel (dB)", y = "Densidade", fill = "Status") +
   scale_fill_manual(values = c("red", "blue"), labels = c("Falha", "Sucesso")) +
   theme_minimal() +
   theme(
@@ -266,10 +347,12 @@ ggplot(df, aes(x = DESIBEL, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Distribuição de Sucesso e Falha por Decibel")
+  ggtitle("Distribuição Desibel por Status")
 ```
 
-O número de sucessos e falhas no experimento apresentou um comportamento semelhante. Observamos poucos casos no intervalo de 70 dB até um pouco mais de 80 dB e, ao nos aproximarmos de 85 dB, podemos observar um aumento nas observações para ambos os casos, seguido de uma queda aos 90 dB. Um padrão semelhante ocorre quando o experimento atinge os 100 dB.
+O número de sucessos e falhas no experimento apresentou um comportamento semelhante. Observamos poucos casos onde o número de falhas é superior. Ao nos aproximarmos de 85 dB, podemos observar um aumento nas observações para ambos os casos, seguido de uma queda aos 90 dB para o número de sucesso e para as falhas essa queda se da aos 95 dB. Um padrão um pouco semelhante ocorre quando o experimento atinge os 100 dB.
+
+#### Correlação
 
 ```{r echo = FALSE}
 # Calcula a matriz de correlação
@@ -305,11 +388,11 @@ As variáveis Distance e Airflow apresentaram uma alta correlação negativa (-0
 
 A multicolinearidade ocorre quando duas ou mais variáveis independentes estão altamente correlacionadas entre si. Isso pode afetar negativamente a interpretação dos coeficientes estimados e a estabilidade do modelo. Para evitar problemas decorrentes da multicolinearidade, é importante considerar estratégias como a remoção de uma das variáveis altamente correlacionadas.
 
-# Pré-Processamento
+## Pré-Processamento
 
 O pré-processamento de dados é uma etapa essencial na preparação de dados para a análise e construção de modelos de machine learning. Consiste em uma série de técnicas e procedimentos aplicados aos dados brutos com o objetivo de melhorar a qualidade dos dados, reduzir ruídos, tratar valores ausentes e outliers, além de preparar os dados de acordo com as necessidades específicas do modelo.
 
-## Label Encoding
+### Label Encoding
 
 O Label Encoding é uma técnica de pré-processamento de dados usada para transformar variáveis categóricas em valores numéricos. Ele atribui um valor inteiro único para cada categoria presente na variável, permitindo que algoritmos de machine learning processem esses dados.
 
@@ -333,11 +416,12 @@ A padronização dos dados é uma técnica de pré-processamento que visa transf
 df[, num] <- scale(df[, num])
 ```
 
-### Divisão em treino e teste
+### Treino e teste
 
 A divisão dos dados em treino e teste é essencial para avaliar a capacidade de generalização de modelos de machine learning. Uma parte dos dados é usada para treinar o modelo e outra parte é reservada para testá-lo. Isso evita que o modelo se ajuste excessivamente aos dados de treinamento.
 
 #### Aplicando divisão em dados de treino e teste
+
 ```{r echo = FALSE}
 set.seed(10)
 ```
@@ -348,3 +432,273 @@ dados_treinamento <- df[indice_treinamento,]
 dados_teste <- df[-indice_treinamento,]
 ```
 
+## Machine Learning
+
+A aprendizagem de máquina, também conhecida como machine learning, é um campo da inteligência artificial que se concentra no desenvolvimento de algoritmos e técnicas que permitem aos computadores aprenderem e melhorarem automaticamente a partir de dados. Em vez de serem explicitamente programadas para realizar uma tarefa específica, as máquinas aprendem com exemplos e experiências anteriores, permitindo que tomem decisões e realizem previsões com base em padrões e informações presentes nos dados.
+
+### GLM - Generalized Linear Model
+
+O modelo Generalized Linear Model (GLM) é uma abordagem estatística para modelagem de dados que permite analisar relações entre variáveis. Ele estende o modelo linear tradicional ao lidar com diferentes tipos de variáveis de resposta, incluindo binárias, de contagem e contínuas.
+
+```{r echo = TRUE, results = "hide"}
+# Treinando o modelo de regressão logística - GLM
+glm_v1 <- train(STATUS ~ ., 
+                data = dados_treinamento,
+                method = "glm", 
+                family = "binomial")
+```
+
+*Descrição e resultado do modelo glm_v1:*
+
+```{r}
+glm_v1
+```
+
+-   O modelo é composto por 12.210 amostras, com 6 variáveis preditoras, classificadas em duas classes: "0" (falhas) e "1" (sucesso) na extinção da chama.
+
+-   Para avaliar o desempenho do modelo, utilizou-se a técnica de reamostragem chamada Bootstrap, que gera múltiplas amostras do mesmo tamanho do conjunto de dados original, permitindo avaliar a estabilidade e variação do desempenho do modelo.
+
+-   Observou-se uma acurácia aproximada de 0,90, indicando que o modelo apresenta boa qualidade de classificação. Isso significa que o modelo tem um bom desempenho na tarefa de classificar o objeto de estudo.
+
+*Previsão para dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+# Fazer previsões nos dados de teste
+previsoes_glm_v1 <- predict(glm_v1, newdata = dados_teste)
+```
+
+*observando acurácia para previsão com os dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+# Calcular a acurácia
+acuracia_glm_v1 <- confusionMatrix(previsoes_glm_v1, dados_teste$STATUS)$overall['Accuracy']
+```
+
+```{r}
+acuracia_glm_v1
+```
+
+A acurácia obtida ao prever os dados de teste continuou em torno de 0,90. Isso indica que temos um bom modelo capaz de generalizar o padrão dos dados, equilibrando a capacidade de generalização e aprendizado, evitando possíveis problemas de overfitting e underfitting.
+
+```{r echo = TRUE, results = "hide"}
+matriz_confusao_glm_v1 <- confusionMatrix(previsoes_glm_v1, dados_teste$STATUS)
+```
+
+*Matriz de confusão:*
+
+```{r}
+matriz_confusao_glm_v1
+```
+
+-   O modelo previu corretamente a classe 0 em 2364 instâncias, chamado de verdadeiro negativo.
+
+-   Houve 213 casos em que o valor esperado era 0, mas o modelo previu 1, o que representa um falso positivo.
+
+-   Em cerca de 333 ocasiões, o modelo previu 0 quando o valor esperado era 1, caracterizando um falso negativo.
+
+-   O modelo acertou a classe 1 em 2322 instâncias, conhecido como verdadeiro positivo.
+
+### KNN - k-nearest neighbors
+
+O KNN (k-nearest neighbors) é um algoritmo de aprendizado de máquina usado para classificação e regressão. Ele classifica um ponto de dados com base na classe da maioria dos k vizinhos mais próximos no espaço de características. O valor de k determina a influência dos vizinhos na classificação. O KNN é simples e intuitivo, porém pode ser computacionalmente caro para conjuntos de dados grandes. Ele não faz suposições sobre a distribuição dos dados, tornando-o um método versátil para problemas diversos.
+
+*Arquivo de controle:*
+
+```{r echo = TRUE, results = "hide"}
+ctrl <- trainControl(method = "repeatedcv", repeats = 3)
+```
+
+*Criando modelo KNN:*
+
+```{r echo = TRUE, results = "hide"}
+knn_v1 <- train(STATUS ~ ., 
+                data = dados_treinamento,
+                method = "knn",
+                trControl = ctrl,
+                tuneLength = 20)
+```
+
+*Descrição e resultado do modelo knn_v1:*
+
+```{r}
+knn_v1
+```
+
+-   O modelo utilizou uma amostra de 12.210 instâncias e 6 variáveis preditoras. A variável de resposta possui duas classes: "0" (falhas) e "1" (sucesso) na extinção da chama.
+
+-   Foram testados diferentes valores de k (número de vizinhos mais próximos considerados) e suas respectivas métricas de desempenho foram registradas. O valor de k = 5 apresentou a maior acurácia, aproximadamente 0.96. Isso indica que o modelo possui um bom desempenho na tarefa de classificação do objeto de estudo.
+
+*plot acurácia e visinhos proximos:*
+
+```{r echo = FALSE, results = "hide"}
+plot(knn_v1)
+```
+
+-   Ao observar o plot do modelo **knn_v1**, nota-se que conforme o número de k (número de vizinhos mais próximos considerados) aumenta, a acurácia diminui.
+
+*Previsão para dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+knnpredict <- predict(knn_v1, newdata = dados_teste)
+```
+
+*observando acurácia para previsão com os dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+knnacuracia <- confusionMatrix(knnpredict, dados_teste$STATUS)$overall['Accuracy']
+```
+
+```{r}
+knnacuracia
+```
+
+A acurácia obtida no modelo knn ao fazer uma previsão com os dados de teste foi de aproximadamente 0.96. Indicativo de que temos um bom modelo, assim como o anterior, capaz de generalizar o padrão dos dados, equilibrando a capacidade de generalização e aprendizado.
+
+```{r echo = TRUE, results = "hide"}
+knnmatriz_confusao <- confusionMatrix(knnpredict, dados_teste$STATUS)
+```
+
+*Matriz de confusão:*
+
+```{r}
+knnmatriz_confusao
+```
+
+-   O modelo previu corretamente a classe 0 em 2495 instâncias, chamado de verdadeiro negativo.
+
+-   Houve 82 casos em que o valor esperado era 0, mas o modelo previu 1, o que representa um falso positivo.
+
+-   Em cerca de 136 ocasiões, o modelo previu 0 quando o valor esperado era 1, caracterizando um falso negativo.
+
+-   O modelo acertou a classe 1 em 2519 instâncias, conhecido como verdadeiro positivo.
+
+O modelo KNN apresentou uma melhora significativa em comparação com o modelo GLM. Houve um aumento na acurácia e uma redução tanto nos falsos positivos quanto nos falsos negativos.
+
+### NB - Naive Bayes
+
+O modelo Naive Bayes é um algoritmo de aprendizado de máquina baseado no teorema de Bayes. Ele assume uma independência condicional entre os recursos, o que significa que cada recurso é tratado independentemente dos outros. Esse modelo é amplamente utilizado em tarefas de classificação e é conhecido por sua eficiência computacional e facilidade de implementação. O Naive Bayes calcula a probabilidade condicional de uma classe dado um conjunto de recursos usando a fórmula de Bayes.
+
+*Criando modelo NB:*
+
+```{r echo = TRUE, results = "hide"}
+modelo_nb <- naiveBayes(STATUS ~ ., 
+                        data = dados_treinamento)
+```
+
+*Previsão para dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+predict_nb <- predict(modelo_nb, newdata = dados_teste)
+```
+
+*observando acurácia para previsão com os dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+acuracia_nb <- confusionMatrix(predict_nb,                   dados_teste$STATUS)$overall['Accuracy']
+```
+
+```{r}
+acuracia_nb
+```
+
+A acurácia obtida ao prever os dados de teste apresentou um valor de aproximadamente 0,87. Embora isso indique que temos um bom modelo, esse valor é inferior ao resultado obtido no modelo anterior, o KNN.
+
+```{r echo = TRUE, results = "hide"}
+matriz_confusaonb <- confusionMatrix(predict_nb, dados_teste$STATUS)
+```
+
+*Matriz de confusão:*
+
+```{r}
+matriz_confusaonb
+```
+
+-   O modelo previu corretamente a classe 0 em 2370 instâncias, chamado de verdadeiro negativo.
+
+-   Houve 207 casos em que o valor esperado era 0, mas o modelo previu 1, o que representa um falso positivo.
+
+-   Em cerca de 453 ocasiões, o modelo previu 0 quando o valor esperado era 1, caracterizando um falso negativo.
+
+-   O modelo acertou a classe 1 em 2202 instâncias, conhecido como verdadeiro positivo.
+
+### RF - Random Forest
+
+A Random Forest é um algoritmo de aprendizado de máquina que combina várias árvores de decisão para realizar tarefas de classificação ou regressão. Cada árvore na floresta é treinada em uma amostra aleatória dos dados de treinamento, e a previsão final é obtida por votação majoritária (classificação) ou média (regressão) das previsões de todas as árvores. Esse modelo é conhecido por sua capacidade de lidar com grandes conjuntos de dados e por sua robustez contra overfitting. Além disso, a Random Forest pode fornecer importância relativa dos recursos, ajudando na seleção de características.
+
+*Criando modelo RF:*
+
+```{r echo = TRUE, results = "hide"}
+modelo_rf <- randomForest(STATUS ~ .,
+                          data = dados_treinamento,
+                          ntree = 500,
+                          mtry = 5)
+```
+
+*Descrição e resultado do modelo modelo_rf:*
+
+```{r}
+modelo_rf
+```
+
+-   o modelo de Random Forest foi aplicado a um problema de classificação. Ele foi treinado usando os dados de treinamento e consiste em 500 árvores de decisão. Durante a construção das árvores, 5 variáveis foram consideradas em cada divisão.
+
+-   O modelo estimou que a taxa de erro fora da amostra (OOB) é de aproximadamente 2,98%. Isso significa que, em média, o modelo tem uma taxa de acerto de cerca de 97,02%
+
+*Previsão para dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+predict_rf <- predict(modelo_rf, newdata = dados_teste)
+```
+
+*observando acurácia para previsão com os dados de teste:*
+
+```{r echo = TRUE, results = "hide"}
+acuracia_rf <- confusionMatrix(predict_rf, dados_teste$STATUS)$overall['Accuracy']
+```
+
+```{r}
+acuracia_rf
+```
+
+A acurácia obtida ao prever os dados de teste apresentou um valor de aproximadamente 0,97. Isso indica que temos um bom modelo, e ele é capaz de generalizar o padrão dos dados, equilibrando a capacidade de generalização e aprendizado, evitando possíveis problemas de overfitting e underfitting.
+
+```{r echo = TRUE, results = "hide"}
+matriz_confusaorf <- confusionMatrix(predict_rf, dados_teste$STATUS)
+```
+
+*Matriz de confusão:*
+
+```{r}
+matriz_confusaorf
+```
+
+-   O modelo previu corretamente a classe 0 em 2513 instâncias, chamado de verdadeiro negativo.
+
+-   Houve 64 casos em que o valor esperado era 0, mas o modelo previu 1, o que representa um falso positivo.
+
+-   Em cerca de 93 ocasiões, o modelo previu 0 quando o valor esperado era 1, caracterizando um falso negativo.
+
+-   O modelo acertou a classe 1 em 2562 instâncias, conhecido como verdadeiro positivo.
+
+O modelo Random Forest apresentou o melhor desempenho se comparado aonde mais modelos. Sua precisão de prvisão aumentou, reduzindo os erros dos falsos positivos e falsos nagativos ao fazer uma previsão com os dados de teste.
+
+## Conclusão
+
+Observando os dados de acurácia do gráfico seguinte, embora todos os modelos tenham apresentado um bom desempenho, o modelo Random Forest foi o que obteve a maior acurácia.
+
+```{r echo = FALSE}
+modelos <- c("GLM", "KNN", "NBayes", "R.Forest")
+acuracias <- c(acuracia_glm_v1, knnacuracia, acuracia_nb, acuracia_rf)
+color <- colorRampPalette(c("darkblue","lightblue"))
+```
+
+```{r echo = FALSE, results = "hide"}
+barplot(acuracias, names.arg = modelos,
+        col = color(4),
+        ylim = c(0.0,1.0),
+        xlab = "Modelos", 
+        ylab = "Acurácia",
+        main = "Acurácia dos Modelos")
+```
+
+Através desta pesquisa, utilizando simulações feitas no computador e a criação de modelos de Machine Learning, foi possível adicionar uma camada adicional de segurança ao processo de teste de extintores de incêndio. Os dados utilizados e os modelos desenvolvidos demonstraram uma capacidade elevada de prever a eficácia dos extintores em extinguir as chamas. Isso representa um avanço significativo na área de segurança, oferecendo uma abordagem mais precisa e confiável na avaliação do desempenho dos extintores. Esses modelos podem contribuir para aprimorar os procedimentos de teste e garantir uma resposta mais eficaz em situações de incêndio, aumentando a segurança das pessoas e dos ambientes.

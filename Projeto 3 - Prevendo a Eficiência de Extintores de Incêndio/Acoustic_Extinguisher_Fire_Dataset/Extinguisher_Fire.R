@@ -71,7 +71,7 @@ num <- names(df)[sapply(df, is.numeric)]
 # ANÁLISE EXPLORATÓRIA DOS DADOS
 ## Histograma - Desibel
 hist(df$DESIBEL,
-     main = "Histograma Decibel",
+     main = "Histograma - Desibel",
      xlab = "Desibel (dB)", ylab = "Freq. Absoluta",
      col = c("blue"),
      border = FALSE,
@@ -100,8 +100,8 @@ summary(df$DESIBEL)
 
 ## Histograma - AirFlow
 hist(df$AIRFLOW,  
-     main = "Fluxo de Ar durante o Experimento", 
-     xlab = "Fluxo de Ar (m/s)", ylab = "Freq. Absoluta", 
+     main = "Histograma - AirFlow", 
+     xlab = "AirFlow", ylab = "Freq. Absoluta", 
      col = c("blue"), 
      border = FALSE, 
      xlim = c(0,18), ylim = c(0,2200),
@@ -116,8 +116,8 @@ hist(df$AIRFLOW,
 
 # Boxplot - Airflow
 boxplot(df$AIRFLOW,
-        main = "Boxplot - Fluxo de Ar",
-        ylab = "Fluxo de Ar (m/s)",
+        main = "Boxplot - Airflow",
+        ylab = "Airflow (m/s)",
         col = "red")
 
 summary(df$AIRFLOW)
@@ -133,7 +133,7 @@ summary(df$AIRFLOW)
 
 ## Histograma - Frequency
 hist(df$FREQUENCY,  
-     main = "Frequência Durante o Experimento", 
+     main = "Histograma - Frequency", 
      xlab = "Frequência (Hz)", ylab = "Freq. Absoluta", 
      col = c("blue"), 
      border = FALSE, 
@@ -147,8 +147,8 @@ hist(df$FREQUENCY,
 
 # Boxplot - Frenquecy
 boxplot(df$FREQUENCY,
-        main = "Boxplot - Frenquência",
-        ylab = "Frenquência (Hz)",
+        main = "Boxplot - Frenquecy",
+        ylab = "Frenquecy (Hz)",
         col = "red")
 
 summary(df$FREQUENCY)
@@ -160,8 +160,8 @@ summary(df$FREQUENCY)
 
 # Histograma - Distance
 hist(df$DISTANCE,  
-     main = "Distância durante o Experimento", 
-     xlab = "Distância (cm)", ylab = "Freq. Absoluta", 
+     main = "Histograma - Distance", 
+     xlab = "Distance (cm)", ylab = "Freq. Absoluta", 
      col = c("blue"), 
      border = FALSE, 
      xlim = c(0,200), ylim = c(0,2000),
@@ -174,8 +174,8 @@ hist(df$DISTANCE,
 
 # Boxplot - DISTANCE
 boxplot(df$DISTANCE,
-        main = "Boxplot - Distância",
-        ylab = "Distância (Hz)",
+        main = "Boxplot - Distance",
+        ylab = "Distance (cm)",
         col = "red")
 
 summary(df$DISTANCE)
@@ -192,6 +192,7 @@ colnames(tab) <- c("Falha", "Sucesso")
 
 # Visualizando a tabela com os cabeçalhos editados
 print(tab)
+
 # obtendo a tabela de frequências relativas fixando as colunas da tabela 
 tab2 = prop.table(tab, margin=2)
 
@@ -268,7 +269,7 @@ plot1 <- ggplot(df, aes(x = DISTANCE, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Densidade de Sucesso e Falha por Distância")
+  ggtitle("Densidade Distância pot Status")
 
 
 plot1
@@ -296,7 +297,7 @@ plot2 <- ggplot(df, aes(x = AIRFLOW, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Densidade de Sucesso e Falha por Fluxo de Ar")
+  ggtitle("Densidade Airflow por Status")
 
 plot2
 
@@ -324,7 +325,7 @@ plot3 <- ggplot(df, aes(x = FREQUENCY, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Distribuição de Sucesso e Falha por Frequência (Hz)")
+  ggtitle("Densidade Frequency por Status")
 
 
 plot3
@@ -351,7 +352,7 @@ ggplot(df, aes(x = DESIBEL, fill = STATUS)) +
     axis.text = element_text(size = 10),
     plot.title = element_text(size = 14, hjust = 0.5)
   ) +
-  ggtitle("Distribuição de Sucesso e Falha por Decibel")
+  ggtitle("Densidade Desibel por Status")
 
 # O número de sucessos e falhas no experimento apresentou um comportamento 
 # semelhante. Observamos poucos casos no intervalo de 70 dB até um pouco mais 
@@ -431,34 +432,37 @@ modelo <- randomForest(STATUS ~ . ,
 varImpPlot(modelo) 
 
 # Treinar o modelo de regressão logística
-modelo_glm <- train(STATUS ~ ., 
+glm_v1 <- train(STATUS ~ ., 
                 data = dados_treinamento,
                 method = "glm", 
                 family = "binomial")
 
 # Fazer previsões nos dados de teste
-previsoes_glm <- predict(modelo_glm, newdata = dados_teste)
+previsoes_glm_v1 <- predict(glm_v1, newdata = dados_teste)
 
 # Calcular a acurácia
-acuracia_glm <- confusionMatrix(previsoes_glm, dados_teste$STATUS)$overall['Accuracy']
+acuracia_glm_v1 <- confusionMatrix(previsoes_glm_v1, 
+                                   dados_teste$STATUS)$overall['Accuracy']
 
 # Obter a matriz de confusão
-matriz_confusao_glm <- confusionMatrix(previsoes_glm, dados_teste$STATUS)
+matriz_confusao_glm <- confusionMatrix(previsoes_glm_v1, dados_teste$STATUS)
 
-# Segundo modelo GLM
-modelo_glm_2 <- train(STATUS ~ SIZE + FUEL+ DESIBEL + AIRFLOW + FREQUENCY, 
+#### Segundo modelo GLM
+glm_v2 <- train(STATUS ~ SIZE + FUEL+ DESIBEL + AIRFLOW + FREQUENCY, 
                       data = dados_treinamento,
                       method = "glm", 
                       family = "binomial")
 
 # Fazer previsões nos dados de teste
-previsoes_glm_2 <- predict(modelo_glm_2, newdata = dados_teste)
+previsoes_glm_v2 <- predict(glm_v2, newdata = dados_teste)
 
 # Calcular a acurácia
-acuracia_glm_2 <- confusionMatrix(previsoes_glm_2, dados_teste$STATUS)$overall['Accuracy']
+acuracia_glm_v2 <- confusionMatrix(previsoes_glm_v2, 
+                                   dados_teste$STATUS)$overall['Accuracy']
 
 # Obter a matriz de confusão
-matriz_confusao_glm_2 <- confusionMatrix(previsoes_glm_2, dados_teste$STATUS)
+matriz_confusao_glm_v2 <- confusionMatrix(previsoes_glm_v2, dados_teste$STATUS)
+
 
 # Modelo de Classificação KNN
 # Arquivo de controle
@@ -478,25 +482,52 @@ plot(knn_v1)
 knnpredict <- predict(knn_v1, newdata = dados_teste)
 
 # Calculo da acurácia
-knnacuracia <- confusionMatrix(knnpredict, dados_teste$STATUS)$overall['Accuracy']
+knnacuracia <- confusionMatrix(knnpredict, 
+                               dados_teste$STATUS)$overall['Accuracy']
 
 # matriz de confusão
 knnmatriz_confusao <- confusionMatrix(knnpredict, dados_teste$STATUS)
 
 
-# Naive bayes)
+# Naive bayes
 modelo_nb <- naiveBayes(STATUS ~ ., 
                         data = dados_treinamento)
-
 
 # Fazer previsões nos dados de teste
 predict_nb <- predict(modelo_nb, newdata = dados_teste)
 
 # Calcular a acurácia
-acuracia_nb <- confusionMatrix(predict_nb, dados_teste$STATUS)$overall['Accuracy']
+acuracia_nb <- confusionMatrix(predict_nb, 
+                               dados_teste$STATUS)$overall['Accuracy']
 
 # Obter a matriz de confusão
 matriz_confusaonb <- confusionMatrix(predict_nb, dados_teste$STATUS)
+
+# NB v2
+# Criando o grid
+tuningGrid <- expand.grid(laplace = c(0, 0.5, 1),
+                          usekernel = c(FALSE, TRUE),
+                          adjust = 0.1)
+
+# treinando o modelo
+modelo_nb_v2 <- train(STATUS ~ .,
+                   data = dados_treinamento,
+                   method = "naive_bayes",
+                   trControl = trainControl(method = "cv", number = 5),
+                   tuneGrid = tuningGrid)
+
+# acessando os melhores parâmetros
+best_hiperparameters <- modelo_nb$bestTune
+
+# Fazer previsões nos dados de teste
+predict_nb_v2 <- predict(modelo_nb_v2, newdata = dados_teste)
+
+# Calcular a acurácia
+acuracia_nb_v2 <- confusionMatrix(predict_nb_v2, 
+                               dados_teste$STATUS)$overall['Accuracy']
+
+# Obter a matriz de confusão
+matriz_confusaonb_v2 <- confusionMatrix(predict_nb_v2, dados_teste$STATUS)
 
 
 # Random Forest
@@ -513,3 +544,17 @@ acuracia_rf <- confusionMatrix(predict_rf, dados_teste$STATUS)$overall['Accuracy
 
 # Obter a matriz de confusão
 matriz_confusaorf <- confusionMatrix(predict_rf, dados_teste$STATUS)
+
+# comparação dos modelos
+
+modelos <- c("GLM", "KNN", "NBayes", "R.Forest")
+acuracias <- c(acuracia_glm_v1, knnacuracia, acuracia_nb, acuracia_rf)
+color <- colorRampPalette(c("darkblue","lightblue"))
+
+barplot(acuracias, names.arg = modelos,
+        col = color(4),
+        ylim = c(0.0,1.0),
+        xlab = "Modelos", 
+        ylab = "Acurácia",
+        main = "Acurácia dos Modelos")
+
