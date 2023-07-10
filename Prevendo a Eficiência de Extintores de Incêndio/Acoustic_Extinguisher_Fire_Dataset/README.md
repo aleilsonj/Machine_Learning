@@ -1,3 +1,4 @@
+# Projeto com FeedBack 2 da Formação Cientista de Dados da Data Science Academy
 # Machine Learning na Segurança do Trabalho: Prevendo a Eficiência de Extintores de Incêndio
 ## Visão Geral do Projeto:
 O objetivo deste estudo é explorar a possibilidade de criar um modelo de Machine Learning para prever o funcionamento de extintores de incêndio com base em simulações computacionais. O teste hidrostático de extintor, estabelecido pelas normas da ABNT, visa identificar possíveis falhas nos extintores. Para aumentar a segurança nesse procedimento, busca-se adicionar uma camada adicional de segurança através de modelos de Machine Learning. Os dados utilizados são provenientes de um experimento de extinção de chamas com diferentes tipos de combustíveis, utilizando um sistema de extinção por ondas sonoras. O objetivo é predizer se a extinção das chamas foi bem-sucedida ou falhou com base em seis recursos de entrada.
