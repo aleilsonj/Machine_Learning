@@ -11,7 +11,7 @@ PROJETO ANALISE DE RISCO DE CREDITO
 import os
 
 # Defina o caminho do novo diretório no formato Windows
-novo_diretorio = r'C:\Users\ALEILSON\Documents\credit_german'  # Use r'' para evitar problemas de escape
+novo_diretorio = r'C:\Users\ALEILSON\Documents\github\Machine_Learning\Analise Risco de Crédito'  # Use r'' para evitar problemas de escape
 
 # Altera o diretório de trabalho
 os.chdir(novo_diretorio)
@@ -38,6 +38,7 @@ colunas = (
 
 df = pd.read_csv('german.DATA', header=None, names=colunas, delimiter=' ')  # por espaço
 
+
 # %%
 print(df['valor_do_credito'].isnull().sum())  # Verifica valores nulos
 print(df['valor_do_credito'].dtype)  # Verifica o tipo de dado da coluna
@@ -46,6 +47,22 @@ print(df['valor_do_credito'].dtype)  # Verifica o tipo de dado da coluna
 df['valor_USD'] = (df['valor_do_credito'].astype(float) * 0.55806076).round(2)
 # %% Visualizando os dados
 df.head(10)
+
+
+# %% Análise Univariada
+# Aplicar o mapeamento
+mapping = {
+    'A11': 'Saldo nagativo',
+    'A12': 'Saldo baixo',
+    'A13': 'Saldo estável',
+    'A14': 'Sem conta corrente'
+}
+
+df['status_da_conta'] = df['status_da_conta'].map(mapping)
+
+
+print(df['status_da_conta'].value_counts())  # Exemplo para o Atributo 1
+df['status_da_conta'].value_counts().plot(kind='bar')
 
 
 # %% Valor de credito concedido para bons e maus pagadores
@@ -175,4 +192,8 @@ sns.heatmap(table, annot=True, cmap='Blues', fmt='g')
 plt.title('Mapa de Calor da Tabela de Contingência')
 plt.show()
 
+# %% Scarter
+# Criando o scatter plot
+plt.scatter(df['taxa_pct_renda_disp'], df['Idade'] , color='green', label='Alvo vs Idade')
 
+df.dtypes
